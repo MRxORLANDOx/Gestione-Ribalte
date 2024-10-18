@@ -1,0 +1,603 @@
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestione Ribalte</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        margin: 20px;
+        background-color: #f9f9f9;
+        color: #333;
+        font-weight: bold;
+                }
+        h2 {
+            color: #4a4a4a;
+        }
+        table {
+            width: 100%; 
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            background-color: #fff;
+        }
+        th, td {
+            border: 1px solid #ccc;
+            padding: 5px;
+            text-align: CENTER;
+            transition: background-color 0.3s;
+        }
+        th {
+            background-color: #007bff;
+            color: white;
+            font-size: 30px;
+        }
+        td {
+            font-size: 30px;
+        }
+        th:first-child, td:first-child {
+            width: 10px;
+            text-align: center;
+        }
+        th:nth-child(2), td:nth-child(2) {
+            width: 10px;
+        }
+        th:nth-child(3), td:nth-child(3) {
+            width: 14%;
+            font-size: 30px;
+        }
+        th:nth-child(4), td:nth-child(4) {
+            width: 13%;
+            font-size: 30px;
+        }
+        th:nth-child(5), td:nth-child(5) {
+            width: 1100px;
+        }
+        th:nth-child(n+6), td:nth-child(n+6) {
+            width: 14%;
+            font-size: 30px;
+        }
+        input[type="text"] {
+            width: 95%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 23px;
+            font-weight: bold;
+            transition: border-color 0.3s;
+            text-transform: uppercase;
+        }
+        input[type="text"]:hover {
+            border-color: #007bff; 
+        }
+        .date-container {
+            display: flex;
+            justify-content: center;
+            margin: 10px 0; /* Ridotto per avvicinare al tavolo */
+        }
+        .date-container input {
+            color: red;
+            text-align: center;
+            font-size: 40px;
+            border: none;
+            background: none;
+            font-weight: bold;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 20px;
+        }
+        .table-wrapper {
+            width: 100%;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+        button {
+            padding: 12px 12px;
+            font-size: 18px;
+            cursor: pointer;
+            margin-left: 0px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+        .evidenziato {
+            background-color: yellow;
+        }
+        .completato {
+            background-color: green;
+            color: white;
+        }
+        .conteggio {
+            font-weight: bold;
+            margin: 5px 0;
+            font-size: 35px;
+        }
+        /* Allinea i pulsanti sulla stessa linea */
+        .button-group {
+            display: flex;
+            justify-content: center;
+            gap: 10px; /* Spazio tra i pulsanti */
+        }
+    </style>
+    <!-- Inclusione di html2canvas per la cattura dello schermo -->
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.0.0-rc.5/dist/html2canvas.min.js"></script>
+</head>
+<body>
+
+    <div class="date-container">
+        <input type="text" id="data_odierna" readonly>
+    </div>
+
+    <div class="table-wrapper">
+        <table>
+            <tr>
+                <th>DA</th>
+                <th>RI</th>
+                <th>NOME</th>
+                <th>NOTE</th>
+                <th style="background-color: #007bff; width: 5px;"></th>
+                <th>DA COMPL</th>
+                <th style="background-color: #007bff; width: 5px;"></th>
+                <th colspan="4" style="text-align: center;">TOTALE</th>
+            </tr>
+            <tbody id="asignazioni">
+                <script>
+                    for (let i = 1; i <= 11; i++) {
+                        document.write(`<tr>
+                            <td>
+                                <button class="action-button" onclick="tagliaNome(${i})">X</button>
+                            </td>
+                            <td id="ri_${i}" style="padding: 10px;">${i}</td> <!-- Aggiunto padding qui -->
+                            <td>
+                                <input type="text" id="nome_${i}" oninput="salvaDati()" ondblclick="handleDoubleClickNome(${i})" autocomplete="off">
+                            <td ondblclick="handleDoubleClickNote(${i})"> <!-- Aggiunto l'evento qui -->
+                                <input type="text" id="note_${i}" oninput="salvaDati()" autocomplete="off">
+                            </td>
+<th style="background-color: #007bff; width: 5px;"></th>
+                            <td ondblclick="handleDoubleClickDaCompletare(${i})">
+                                <input type="text" id="da_completare_${i}" oninput="salvaDati()" autocomplete="off">
+                            </td>
+                            <td style="background-color: #007bff; width: 5px;"></td>
+                            <td>
+                                <input type="text" id="camion_${i}_1" oninput="aggiornaConteggio(); salvaDati()" onblur="controllaDuplicati(this)" ondblclick="handleDoubleClickRibalta(event, ${i}, 1)" autocomplete="off">
+                            </td>
+                            <td>
+                                <input type="text" id="camion_${i}_2" oninput="aggiornaConteggio(); salvaDati()" onblur="controllaDuplicati(this)" ondblclick="handleDoubleClickRibalta(event, ${i}, 2)" autocomplete="off">
+                            </td>
+                            <td>
+                                <input type="text" id="camion_${i}_3" oninput="aggiornaConteggio(); salvaDati()" onblur="controllaDuplicati(this)" ondblclick="handleDoubleClickRibalta(event, ${i}, 3)" autocomplete="off">
+                            </td>
+                            <td>
+                                <input type="text" id="camion_${i}_4" oninput="aggiornaConteggio(); salvaDati()" onblur="controllaDuplicati(this)" ondblclick="handleDoubleClickRibalta(event, ${i}, 4)" autocomplete="off">
+                            </td>
+                        </tr>`);
+                    }
+                </script>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="container" style="text-align: center;">
+        <h2 class="conteggio">TOTALE: <span id="conteggio_totale">0</span> | 
+        DA COMPLETARE: <span id="conteggio_completare">0</span> | 
+        COMPLETATI: <span id="conteggio_completati">0</span> | 
+        RIMANENTI: <span id="conteggio_rimanenti">0</span></h2>
+        <!-- Pulsanti allineati sulla stessa linea -->
+        <div class="button-group">
+            <button onclick="eliminaDati()">Elimina Dati Salvati</button>
+            <button onclick="catturaSchermo()">Cattura Schermo</button>
+        </div>
+    </div>
+
+    <script>
+        function handleDoubleClickRibalta(event, index, colonna) {
+            const nomeDaCopiare = event.target.value.trim();
+            if (nomeDaCopiare !== "") {
+                const numeroRibalta = prompt("Inserisci il numero della ribalta (1-11):");
+                if (numeroRibalta >= 1 && numeroRibalta <= 11) {
+                    const cellaDestinazione = document.getElementById(`nome_${numeroRibalta}`);
+                    if (cellaDestinazione.value !== "") {
+                        alert("La cella di destinazione è già occupata!");
+                        return; // Esci dalla funzione se la cella è già occupata
+                    }
+                    cellaDestinazione.value = nomeDaCopiare; 
+                    const cellaOrigine = event.target;
+                    cellaOrigine.classList.add('evidenziato');
+                    aggiornaConteggio();
+                    salvaDati();
+                } else {
+                    alert("Numero ribalta non valido!");
+                }
+            } else {
+                alert("Il campo non può essere vuoto!");
+            }
+        }
+
+        function handleDoubleClickNome(index) {
+            const nomeCampo = document.getElementById(`nome_${index}`);
+            const nomeAttuale = nomeCampo.value.trim();
+
+            if (nomeAttuale !== "") {
+                nomeCampo.value = ""; // Elimina il contenuto della cella Nome
+
+                // Cerca il testo eliminato nella colonna Totale
+                for (let i = 1; i <= 11; i++) {
+                    for (let j = 1; j <= 4; j++) {
+                        const cellaTotale = document.getElementById(`camion_${i}_${j}`);
+                        if (cellaTotale.value.trim() === nomeAttuale) {
+                            cellaTotale.classList.add('completato'); // Colora di verde la cella
+                        }
+                    }
+                }
+
+                salvaDati();
+            }
+        }
+
+        function handleDoubleClickDaCompletare(index) {
+            const daCompletareCampo = document.getElementById(`da_completare_${index}`);
+            const daCompletareAttuale = daCompletareCampo.value.trim();
+
+            if (daCompletareAttuale !== "") {
+                daCompletareCampo.value = ""; // Elimina il contenuto della cella Da Completare
+
+                // Cerca il testo eliminato nella colonna Totale
+                for (let i = 1; i <= 11; i++) {
+                    for (let j = 1; j <= 4; j++) {
+                        const cellaTotale = document.getElementById(`camion_${i}_${j}`);
+                        if (cellaTotale.value.trim() === daCompletareAttuale) {
+                            cellaTotale.classList.add('completato'); // Colora di verde la cella
+                        }
+                    }
+                }
+
+                salvaDati();
+            }
+        }
+
+        function tagliaNome(index) {
+            const nomeCampo = document.getElementById(`nome_${index}`);
+            const daCompletareCampo = document.getElementById(`da_completare_${index}`);
+            const nomeAttuale = nomeCampo.value.trim();
+
+            if (nomeAttuale !== "") {
+                nomeCampo.value = "";  // Taglia il contenuto della cella Nome
+                
+                // Cerca la prima cella libera nella colonna Da Completare
+                let cellaTrovata = false;
+                for (let i = 1; i <= 11; i++) {
+                    const daCompletareCampoCorrente = document.getElementById(`da_completare_${i}`);
+                    if (daCompletareCampoCorrente.value === "") {
+                        daCompletareCampoCorrente.value = nomeAttuale;  // Sposta il contenuto nella cella Da Completare
+                        cellaTrovata = true; // Indica che abbiamo trovato una cella libera
+                        break; // Esci dal ciclo
+                    }
+                }
+
+                if (!cellaTrovata) {
+                    alert("Non ci sono celle libere nella colonna 'Da Completare'!");
+                }
+
+                salvaDati();
+            }
+        }
+
+function salvaDati() {
+    const dati = {};
+    const coloriRI = {}; // Oggetto per memorizzare i colori delle celle "RI"
+    const coloriTotale = {}; // Oggetto per memorizzare i colori delle celle "Totale"
+    const gialli = {}; // Oggetto per memorizzare i valori delle celle gialle
+    const valoriCamion = new Set();
+
+    for (let i = 1; i <= 11; i++) {
+        dati[`nome_${i}`] = document.getElementById(`nome_${i}`).value;
+        dati[`note_${i}`] = document.getElementById(`note_${i}`).value;
+        dati[`da_completare_${i}`] = document.getElementById(`da_completare_${i}`).value;
+
+        const riCampo = document.getElementById(`ri_${i}`);
+
+        // Cambia il padding della cella "RI" in base al valore di "NOME"
+        if (dati[`nome_${i}`].trim() !== "") {
+            riCampo.style.padding = "10px"; // Se "NOME" ha valore, padding normale
+            riCampo.style.backgroundColor = "red"; // Cambia il colore a rosso
+            coloriRI[`ri_${i}`] = "red"; // Salva il colore
+        } else {
+            riCampo.style.padding = "10px"; // Padding normale
+            riCampo.style.backgroundColor = "green"; // Cambia il colore a verde
+            coloriRI[`ri_${i}`] = "green"; // Salva il colore
+        }
+
+{
+    const dati = {};
+    const bordi = {}; // Oggetto per memorizzare lo stato dei bordi
+
+    for (let i = 1; i <= 11; i++) {
+        dati[`nome_${i}`] = document.getElementById(`nome_${i}`).value;
+        dati[`note_${i}`] = document.getElementById(`note_${i}`).value;
+
+        // Salva lo stato dei bordi
+        const noteCampo = document.getElementById(`note_${i}`);
+        const nomeCampo = document.getElementById(`nome_${i}`);
+        bordi[`note_${i}`] = noteCampo.style.border === "3px solid red";
+        bordi[`nome_${i}`] = nomeCampo.style.border === "3px solid red";
+    }
+
+    localStorage.setItem("datiTabella", JSON.stringify(dati));
+    localStorage.setItem("bordi", JSON.stringify(bordi)); // Salva lo stato dei bordi
+}
+
+        for (let j = 1; j <= 4; j++) {
+            const cellaCamion = document.getElementById(`camion_${i}_${j}`);
+            dati[`camion_${i}_${j}`] = {
+                valore: cellaCamion.value,  // Memorizza il valore della cella
+                completato: cellaCamion.classList.contains('completato')  // Memorizza se è completata o no
+            };
+
+            // Salva i valori delle celle gialle
+            if (cellaCamion.classList.contains('evidenziato')) {
+                gialli[`camion_${i}_${j}`] = cellaCamion.value;
+            }
+        }
+    }
+    localStorage.setItem("datiTabella", JSON.stringify(dati));
+    localStorage.setItem("coloriRI", JSON.stringify(coloriRI)); // Salva i colori delle celle "RI"
+    localStorage.setItem("celleGialle", JSON.stringify(gialli)); // Salva i valori delle celle gialle
+    aggiornaConteggio();
+}
+
+function caricaDati() {
+    const datiSalvati = localStorage.getItem("datiTabella");
+    if (datiSalvati) {
+        const dati = JSON.parse(datiSalvati);
+        for (let i = 1; i <= 11; i++) {
+            document.getElementById(`nome_${i}`).value = dati[`nome_${i}`] || "";
+            document.getElementById(`note_${i}`).value = dati[`note_${i}`] || "";
+            document.getElementById(`da_completare_${i}`).value = dati[`da_completare_${i}`] || "";
+
+            // Aggiorna il colore e il padding della cella "RI"
+            const riCampo = document.getElementById(`ri_${i}`);
+            if (dati[`nome_${i}`].trim() !== "") {
+                riCampo.style.padding = "10px"; // Se "NOME" ha valore, padding normale
+                riCampo.style.backgroundColor = "red"; // Cambia il colore a rosso
+            } else {
+                riCampo.style.padding = "10px"; // Padding normale
+                riCampo.style.backgroundColor = "green"; // Cambia il colore a verde
+            }
+
+            for (let j = 1; j <= 4; j++) {
+                const cellaCamion = document.getElementById(`camion_${i}_${j}`);
+                const cellaDati = dati[`camion_${i}_${j}`] || { valore: "", completato: false };
+                cellaCamion.value = cellaDati.valore;
+
+                // Ripristina lo stato di completamento della cella
+                if (cellaDati.completato) {
+                    cellaCamion.classList.add('completato');  // Ripristina il colore verde se completata
+                } else {
+                    cellaCamion.classList.remove('completato');  // Rimuovi il colore verde se non completata
+                }
+            }
+        }
+    }
+
+    // Ripristina lo stato dei bordi
+    const statoBordiSalvato = localStorage.getItem("statoBordi");
+    if (statoBordiSalvato) {
+        const statiBordi = JSON.parse(statoBordiSalvato);
+        for (let i = 1; i <= 11; i++) {
+            if (statiBordi[`note_${i}`]) {
+                document.getElementById(`note_${i}`).style.border = "3px solid red";
+                document.getElementById(`nome_${i}`).style.border = "3px solid red";
+            }
+        }
+    }
+
+    aggiornaConteggio(); // Aggiungi questa linea qui
+
+    // Ripristina le celle gialle
+    const celleGialleSalvate = localStorage.getItem("celleGialle");
+    if (celleGialleSalvate) {
+        const gialli = JSON.parse(celleGialleSalvate);
+        for (const key in gialli) {
+            const cellaGialla = document.getElementById(key);
+            if (cellaGialla) {
+                cellaGialla.value = gialli[key]; // Ripristina il valore della cella gialla
+                cellaGialla.classList.add('evidenziato'); // Aggiungi la classe per evidenziare
+            }
+        }
+    }
+}    
+   
+
+        function aggiornaConteggio() {
+            const conteggioTotale = document.getElementById("conteggio_totale");
+            const conteggioCompletare = document.getElementById("conteggio_completare");
+            const conteggioCompletati = document.getElementById("conteggio_completati");
+            const conteggioRimanenti = document.getElementById("conteggio_rimanenti");
+
+            let totale = 0;
+            let daCompletare = 0;
+            let completati = 0;
+
+            for (let i = 1; i <= 11; i++) {
+                // Controlla il campo "da completare" separatamente
+                const daCompletareCampo = document.getElementById(`da_completare_${i}`);
+                if (daCompletareCampo.value.trim() !== "") {
+                    daCompletare++;
+                }
+
+                for (let j = 1; j <= 4; j++) {
+                    const cella = document.getElementById(`camion_${i}_${j}`);
+                    if (cella.value.trim() !== "") {
+                        totale++;
+                        if (cella.classList.contains('completato')) {
+                            completati++;
+                        }
+                    }
+                }
+            }
+
+            conteggioTotale.textContent = totale;
+            conteggioCompletare.textContent = daCompletare;
+            conteggioCompletati.textContent = completati;
+            conteggioRimanenti.textContent = totale - completati;
+        }
+
+        function eliminaDati() {
+    if (confirm("Sei sicuro di voler eliminare i dati salvati?")) {
+        window.location.reload();
+        // Clear the local storage
+        localStorage.removeItem("datiTabella");
+        localStorage.removeItem("coloriRI");
+        localStorage.removeItem("celleGialle");
+        localStorage.removeItem("statoBordi");
+
+        // Loop through each row and clear contents and styles
+        for (let i = 1; i <= 11; i++) {
+        const noteCampo = document.getElementById(`note_${i}`);
+        const nomeCampo = document.getElementById(`nome_${i}`);
+
+        
+            daCompletareCampo.value = ""; // Questo viene sempre svuotato
+
+            // Clear the styles and reset colors
+            const riCampo = document.getElementById(`ri_${i}`);
+            riCampo.style.backgroundColor = ""; // Reset background color for RI
+
+            for (let j = 1; j <= 4; j++) {
+                const cella = document.getElementById(`camion_${i}_${j}`);
+                cella.value = "";
+                cella.classList.remove('completato'); // Remove completed class
+                cella.classList.remove('evidenziato'); // Remove highlighted class
+                cella.style.backgroundColor = ""; // Reset background color for all cells
+            }
+        }
+        aggiornaConteggio(); // Update the count after clearing data
+        
+    }
+}
+
+
+function handleDoubleClickNote(index) {
+    const noteCampo = document.getElementById(`note_${index}`);
+    const nomeCampo = document.getElementById(`nome_${index}`);
+
+    // Controlla se il bordo è già rosso
+    if (noteCampo.style.border === "3px solid red") {
+        // Rimuovi il bordo rosso
+        noteCampo.style.border = "";
+        nomeCampo.style.border = "";
+        // Rimuovi lo stato dal localStorage
+        const datiSalvati = JSON.parse(localStorage.getItem("statoBordi")) || {};
+        delete datiSalvati[`note_${index}`];
+        delete datiSalvati[`nome_${index}`];
+        localStorage.setItem("statoBordi", JSON.stringify(datiSalvati));
+    } else {
+        // Applica il bordo rosso
+        noteCampo.style.border = "3px solid red";
+        nomeCampo.style.border = "3px solid red";
+        // Salva lo stato nel localStorage
+        const datiSalvati = JSON.parse(localStorage.getItem("statoBordi")) || {};
+        datiSalvati[`note_${index}`] = true;
+        datiSalvati[`nome_${index}`] = true;
+        localStorage.setItem("statoBordi", JSON.stringify(datiSalvati));
+    }
+}
+
+
+function controllaDuplicati(currentInput) {
+    const valoriCamion = new Set(); // Set per memorizzare i valori unici
+    const currentValue = currentInput.value.trim(); // Ottieni il valore attuale
+    let duplicatoTrovato = false;
+
+    for (let i = 1; i <= 11; i++) {
+        for (let j = 1; j <= 4; j++) {
+            const cellaCamion = document.getElementById(`camion_${i}_${j}`);
+            const valore = cellaCamion.value.trim();
+
+            // Se il valore non è vuoto e già presente nel Set
+            if (valore !== "" && valore === currentValue && cellaCamion !== currentInput) {
+                duplicatoTrovato = true;
+                break; // Esci dal ciclo se trovi un duplicato
+            }
+            valoriCamion.add(valore); // Aggiungi il valore al Set
+        }
+    }
+
+    // Se è stato trovato un duplicato, svuota il campo corrente e reindirizza
+    if (duplicatoTrovato) {
+        alert(`Errore: il valore "${currentValue}" è già presente nelle celle Totale. Il valore verrà rimosso.`);
+        currentInput.value = ""; // Rimuovi il valore corrente
+        currentInput.focus(); // Riporta il focus sulla cella corrente
+    }
+aggiornaConteggio(); // Update the count after clearing data
+
+}
+
+
+
+
+
+
+  let ultimaOraComunicata = null;
+
+  function aggiornaDataOdierna() {
+    const now = new Date();
+    const options = { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
+    const dataOdierna = now.toLocaleString('it-IT', options);
+    document.getElementById('data_odierna').value = dataOdierna;
+
+    // Controlla se l'ora è cambiata
+    const oraCorrente = now.getHours();
+    if (ultimaOraComunicata !== oraCorrente) {
+      comunicaOra();
+      ultimaOraComunicata = oraCorrente; // Aggiorna l'ultima ora comunicata
+    }
+  }
+
+  function comunicaOra() {
+    const now = new Date();
+    const oraCorrente = now.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+    
+    const utterance = new SpeechSynthesisUtterance("Sono le ore: " + oraCorrente);
+    utterance.lang = 'it-IT'; // Imposta la lingua su italiano
+    speechSynthesis.speak(utterance);
+  }
+
+  // Aggiorna subito e poi ogni secondo
+  aggiornaDataOdierna();
+  setInterval(aggiornaDataOdierna, 1000);
+
+
+
+
+
+        function catturaSchermo() {
+        html2canvas(document.body).then(function(canvas) {
+            const imgData = canvas.toDataURL('image/png');
+            const link = document.createElement('a');
+            link.href = imgData;
+            link.download = 'cattura_schermo.png'; // Nome del file di download
+            link.click(); // Clicca sul link per avviare il download
+        });
+    }
+
+    window.onload = function() {
+        const oggi = new Date();
+        const opzioni = { year: 'numeric', month: 'long', day: 'numeric' };
+        document.getElementById("data_odierna").value = oggi.toLocaleDateString('it-IT', opzioni);
+        caricaDati();
+    };
+
+    </script>
+
+</body>
+</html>
